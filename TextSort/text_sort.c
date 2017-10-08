@@ -6,6 +6,10 @@
 #include <Windows.h>
 #include <conio.h>
 
+const wchar_t* file_out_name = "text_file_out.txt";
+size_t line_count = 0;
+size_t file_size = 0;
+
 typedef struct {
 	void* line_ptr;
 	wchar_t* str;
@@ -22,7 +26,6 @@ void strreverse (char* str) {
 }
 
 int cmpstr (void const *a, void const *b) { 
-	
     return strcmp(((Line*)a)->str, ((Line*)b)->str);
 }
 
@@ -36,13 +39,8 @@ int cmpstr (void const *a, void const *b) {
     return strcmp(aa, bb);
 }*/
 
-int main(int argc, char **argv)
-{
-	setlocale(LC_ALL, "Russian");
-	SetConsoleOutputCP(1251);
-	SetConsoleCP(1251);
-	FILE* file = fopen("text_file.txt", "r");
-	FILE* file_out = fopen("text_file_out.txt", "w");
+wchar_t* ReadFromFile (char* file_name) {
+	FILE* file = fopen(file_name, "r");
 	if (file == NULL) {
 		printf("Error while openning file");
 		return 0;
@@ -50,11 +48,14 @@ int main(int argc, char **argv)
 	fseek(file, 0, SEEK_END);
 	size_t file_size = ftell(file);
 	fseek(file, 0, SEEK_SET);
-	Line* lines = (Line*)calloc(file_size, sizeof(Line));
 	wchar_t* file_vec = (wchar_t*)malloc(sizeof(wchar_t) * file_size);
 	memset(file_vec, '\0', file_size);
 	fwscanf(file, L"%[^\0]", file_vec);
-	wchar_t** buf = (wchar_t**)calloc(file_size, sizeof(wchar_t*));
+	return file_vec;
+}
+
+Line* DivideToLines (wchar_t* file_vec) {
+	Line* lines = (Line*)calloc(file_size, sizeof(Line));
 	lines[0].line_ptr = file_vec;
 	lines[0].str = (wchar_t*)calloc(file_size, sizeof(wchar_t));
 	size_t line_count = 0;
@@ -81,19 +82,25 @@ int main(int argc, char **argv)
 		}
 		
 	}
-	printf("\n");
-	for(size_t i = 0; i < line_count; i++) {
-		printf("%x\n", lines[i].str);
-	}
-	printf("\n");
-	for(size_t i = 0; i < line_count; i++) {
-		printf("%x\n", lines[i].line_ptr);
-	}
-	printf("\n");
+	return lines;
+}
+
+void Sorting (Line* lines) {
 	qsort(lines, line_count, sizeof(Line*), cmpstr);
+	FILE* file_out = fopen(file_out_name, "w");
 	for(size_t i = 0; i < line_count; i++) {
 		fwprintf(file_out, L"%s\n", lines[i].str);
 	}
+}
+
+int main(int argc, char **argv)
+{
+	setlocale(LC_ALL, "Russian");
+	SetConsoleOutputCP(1251);
+	SetConsoleCP(1251);
+	wchar_t* file_str = ReadFromFile("text_file.txt");
+	Line* lines = DivideToLines(file_str);
+	Sorting(lines);
 	system("PAUSE");
 	return 0;
 }
