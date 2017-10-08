@@ -7,8 +7,7 @@
 #include <conio.h>
 
 const wchar_t* file_out_name = "text_file_out.txt";
-size_t line_count = 0;
-size_t file_size = 0;
+
 
 typedef struct {
 	void* line_ptr;
@@ -51,10 +50,23 @@ wchar_t* ReadFromFile (char* file_name) {
 	wchar_t* file_vec = (wchar_t*)malloc(sizeof(wchar_t) * file_size);
 	memset(file_vec, '\0', file_size);
 	fwscanf(file, L"%[^\0]", file_vec);
+	fclose(file);
 	return file_vec;
 }
 
-Line* DivideToLines (wchar_t* file_vec) {
+size_t FileSize (char* file_name) {
+	FILE* file = fopen(file_name, "r");
+	if (file == NULL) {
+		printf("Error while openning file");
+		return 0;
+	}
+	fseek(file, 0, SEEK_END);
+	size_t file_size = ftell(file);
+	fclose(file);
+	return file_size;
+}
+
+Line* DivideToLines (wchar_t* file_vec, size_t file_size) {
 	Line* lines = (Line*)calloc(file_size, sizeof(Line));
 	lines[0].line_ptr = file_vec;
 	lines[0].str = (wchar_t*)calloc(file_size, sizeof(wchar_t));
@@ -85,12 +97,25 @@ Line* DivideToLines (wchar_t* file_vec) {
 	return lines;
 }
 
-void Sorting (Line* lines) {
+size_t LineCount (wchar_t* file_vec) {
+	size_t line_count = 0;
+	size_t i = 0;
+	while (file_vec[i] != '\0') {
+		if (file_vec[i] == '\n') line_count++;
+		i++;
+	}
+	line_count++;
+	return line_count;
+}
+
+void Sorting (Line* lines, size_t line_count) {
 	qsort(lines, line_count, sizeof(Line*), cmpstr);
 	FILE* file_out = fopen(file_out_name, "w");
 	for(size_t i = 0; i < line_count; i++) {
 		fwprintf(file_out, L"%s\n", lines[i].str);
+		wprintf(L"%s\n", lines[i].str);
 	}
+	fclose(file_out);
 }
 
 int main(int argc, char **argv)
@@ -99,8 +124,9 @@ int main(int argc, char **argv)
 	SetConsoleOutputCP(1251);
 	SetConsoleCP(1251);
 	wchar_t* file_str = ReadFromFile("text_file.txt");
-	Line* lines = DivideToLines(file_str);
-	Sorting(lines);
+	size_t line_count = LineCount(file_str);
+	Line* lines = DivideToLines(file_str, FileSize("text_file.txt"));
+	Sorting(lines, line_count);
 	system("PAUSE");
 	return 0;
 }
