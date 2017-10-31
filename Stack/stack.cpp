@@ -1,41 +1,53 @@
-Stack::Stack (size_t size) :
-	data_ (),
-	capacity_ (size),
-	size_ (0),  
-	last_error_ (0),
+Stack::Stack (int size, char* var_name) :
 	canary_1(CANARY_1),
 	canary_2(CANARY_2),
+	data_ (),
 	canary_3(CANARY_3),
-	canary_4(CANARY_4)
+	size_ (0),  
+	capacity_(size),
+	errors_(0),
+	do_push(false),
+	push_value(0),
+	canary_4(CANARY_4),
+	var_name_(new char [255])
 	{
+		var_name_ = var_name;
 		data_.resize(size);
 	}
 	
 
-Stack::Stack (const Stack& that) try:
-	data_ (),
-	capacity_ (that.capacity_),
-	size_ (0),
-	last_error_ (0),
+Stack::Stack (const Stack& that, char* var_name) try:
 	canary_1(CANARY_1),
         canary_2(CANARY_2),
+        data_ (that.data_),
         canary_3(CANARY_3),
-        canary_4(CANARY_4)
+        size_ (that.size_),
+        capacity_(that.size_),
+	errors_(0),
+	do_push(false),
+	push_value(0),
+        canary_4(CANARY_4),
+	var_name_(new char [255])
 	{}
 	catch (std::bad_alloc) {
+		var_name_ = var_name;
 		printf("Error data allocation\n");
 	}
 
 Stack::~Stack () {
-	size_ = NULL;
-	capacity_ = NULL;
-	last_error_ = NULL;
 }
 
+
+#define RETURN_OK(x) if (!Ok()) {\
+                PrintError();\
+                return x;\
+        }
 
 
 void Stack::Push (double value) {
 	if (!Ok()) {
+		do_push = true;
+		push_value = value;
 		PrintError();
 		return;
 	}
@@ -43,10 +55,7 @@ void Stack::Push (double value) {
 }
 
 double Stack::Pop () {
-	if (!Ok()) {
-		PrintError();
-		return 0;
-	}
+	RETURN_OK(0)
 	if (!size_) {
 		printf("Nothing to pop\n");
 		return 0;
@@ -55,18 +64,12 @@ double Stack::Pop () {
 }
 
 bool Stack::Empty () {
-	if (!Ok()) {
-		PrintError();
-		return 0;
-	}
+	RETURN_OK(0)
 	return !size_;
 } 
 
 void Stack::Clear () {
-	if (!Ok()) {
-		PrintError();
-		return;
-	}
+	RETURN_OK()
 	if (!Empty()) {
 		while (size_) {
 			data_[--size_] = 0;
@@ -75,35 +78,31 @@ void Stack::Clear () {
 }
 
 int Stack::Size () {
-	if (!Ok()) {
-		PrintError();
-		return 0;
-	}
+	RETURN_OK(0)
 	return size_;
 }
 
 int Stack::Capacity () {
-	if (!Ok()) {
-		PrintError();
-		return 0;
-	}
+	RETURN_OK(0)
 	return capacity_;
 }
 
-bool Stack::Ok () {
-	return (((!data_.empty()&&capacity_&&size_<capacity_)||(data_.empty()&&!capacity_&&!size_))
-		&&this&&(canary_1==CANARY_1&&canary_2==CANARY_2&&canary_3==CANARY_3&&canary_4==CANARY_4));
+#undef RETURN_OK
+
+bool Stack::Ok () const {
+	return (this&&((!data_.empty()&&capacity_&&size_<capacity_)||(data_.empty()&&!capacity_&&!size_))
+		&&(canary_1==CANARY_1&&canary_2==CANARY_2&&canary_3==CANARY_3&&canary_4==CANARY_4));
 }
 
-void Stack::Dump () {
+void Stack::Dump () const {
 	if (!data_.empty()) {
 		if (size_) {
 			size_t i = size_;
-			printf("Capacity: %d \n", capacity_);
+			printf("Var name: %s\n", var_name_);			printf("Capacity: %d \n", capacity_);
 			printf("Size: %d \n", size_);
 			printf("Canary #1: %d \n", canary_1);
-			printf("Canary #2: %d \n", canary_2);
-			printf("Canary #3: %d \n", canary_3);
+			printf("Canary #2: %g \n", canary_2);
+			printf("Canary #3: %g \n", canary_3);
 			printf("Canary #4: %d \n", canary_4);
 			printf("Stack data: \n");
 
@@ -118,75 +117,75 @@ void Stack::Dump () {
 	}
 }
 
-size_t Stack::CheckErrors () {
+#define ERRORS(statement, value) if (statement) {\
+                        errors_ |= value;\
+                } else
+
+int Stack::CheckErrors () {
 	if (!Ok()) {
-		if (size_>=capacity_) {
-			last_error_ = CAPACITY_SIZE_ERR;
-		} else if (this == NULL) {
-			last_error_ = NO_STACK_ERR;
-		} else if (data_.empty()) {
+		ERRORS ((size_>=capacity_), CAPACITY_SIZE_ERR) 
+		ERRORS ((this == NULL), NO_STACK_ERR)
+		if (data_.empty()) {
 			if (capacity_) {
-				last_error_ = WR_CAPACITY_ERR;
+				errors_ |= WR_CAPACITY_ERR;
 			} else if (size_) {
-				last_error_ = WR_SIZE_ERR;
+				errors_ |= WR_SIZE_ERR;
 			}
 		} else if (!data_.empty()) {
 			if (capacity_ == 0) {
-				last_error_ = NO_CAPACITY_ERR;
+				errors_ |= NO_CAPACITY_ERR;
 			}
-		} else if (canary_1 != CANARY_1) {
-			last_error_ = CANARY_1_ERR;
-		} else if (canary_2 != CANARY_2) {
-                        last_error_ = CANARY_2_ERR;
-                } else if (canary_3 != CANARY_3) {
-                        last_error_ = CANARY_3_ERR;
-                } else if (canary_3 != CANARY_3) {
-                        last_error_ = CANARY_3_ERR;
-                } 
+		} else 
+		ERRORS ((canary_1 != CANARY_1), CANARY_1_ERR)
+		ERRORS ((canary_2 != CANARY_2), CANARY_2_ERR)
+                ERRORS ((canary_3 != CANARY_3), CANARY_3_ERR)
+                ERRORS ((canary_3 != CANARY_3), CANARY_3_ERR)
+               	{}
 		return 1;
 	}
 	return 0;
 } 
 
+#undef ERRORS
+
+#define CHECK_ERROR(error_name, message) case error_name:\
+                        printf message;\
+                        errors_ = errors_&&(!(1 << i));\
+                        break;
+ 
+
 void Stack::PrintError() {
 	if  (CheckErrors()) {
-		switch (last_error_) {
+	for (size_t i = 0; i < 8*sizeof(int); i++) {
+		switch ((int)(errors_&&(1 << i))) {
 		case CAPACITY_SIZE_ERR:
-			printf("Error code: %d, size > capacity\n", last_error_);
+			printf("Error code: size > capacity\n");
 			if (round(SIZE_INC*data_.size())>MAX_STACK_CAPACITY) {
 				printf("Message: the MAX_STACK_CAPACITY reached, stack will not be increased\n");
 			} else {
 				data_.resize(round(data_.size()*SIZE_INC));
 				capacity_ = data_.size();  
 				printf("Message: stack capacity was increased\n");
-			} 
+				if (do_push) data_[size_++] = push_value;
+				do_push = false;
+				push_value = 0;
+			}
+			errors_ = errors_&&(!(1 << i)); 
 			break;
-		case NO_STACK_ERR:
-			printf("Error code: %d, no stack\n", last_error_);
-			break;
-		case WR_CAPACITY_ERR:
-			printf("Error code: %d, wrong capacity\n", last_error_);
-			break;
-		case WR_SIZE_ERR:
-			printf("Error code: %d, wrong size\n", last_error_);
-			break;
-		case NO_CAPACITY_ERR:
-			printf("Error code: %d, stack with no capacity\n", last_error_);
-			break;
-		case CANARY_1_ERR:
-			printf("Error code: %d, canary #1 changed\n", last_error_);
-			break;
-		case CANARY_2_ERR:
-                        printf("Error code: %d, canary #2 changed\n", last_error_);
-                        break;
-		case CANARY_3_ERR:
-                        printf("Error code: %d, canary #3 changed\n", last_error_);
-                        break;
-		case CANARY_4_ERR:
-                        printf("Error code: %d, canary #4 changed\n", last_error_);
-                        break;
+		CHECK_ERROR(NO_STACK_ERR, ("Error code: no stack\n"))
+		CHECK_ERROR(WR_CAPACITY_ERR, ("Error code: wrong capacity\n"))
+		CHECK_ERROR(WR_SIZE_ERR, ("Error code: wrong size\n"))
+		CHECK_ERROR(NO_CAPACITY_ERR, ("Error code: stack with no capacity\n"))
+		CHECK_ERROR(CANARY_1_ERR, ("Error code: canary #1 changed\n"))
+		CHECK_ERROR(CANARY_2_ERR, ("Error code: canary #2 changed\n"))
+		CHECK_ERROR(CANARY_3_ERR, ("Error code: canary #3 changed\n"))
+		CHECK_ERROR(CANARY_4_ERR, ("Error code: canary #4 changed\n"))
 
 		}
 	}
+	}
 	Dump();
+	errors_ = 0;
 }
+
+#undef CHECK_ERROR

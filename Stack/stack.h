@@ -6,42 +6,44 @@
 #include <vector>
 #include <math.h>
 
-size_t MAX_STACK_CAPACITY = 10000;
-size_t MIN_STACK_CAPACITY = 2;
-float SIZE_INC = 1.5;
+const int MAX_STACK_CAPACITY = 10000;
+const int MIN_STACK_CAPACITY = 2;
+const float SIZE_INC = 1.5;
 unsigned int SEED = 42;
 
 
-int CANARY_1 = rand_r(&SEED);
-int CANARY_2 = rand_r(&SEED);
-int CANARY_3 = rand_r(&SEED);
-int CANARY_4 = rand_r(&SEED);
+const int CANARY_1 = rand_r(&SEED);
+const int CANARY_2 = rand_r(&SEED);
+const int CANARY_3 = rand_r(&SEED);
+const int CANARY_4 = rand_r(&SEED);
 
 enum STACK_ERRORS {
-	CAPACITY_SIZE_ERR = 1,
-	NO_STACK_ERR = 2,
-	WR_CAPACITY_ERR = 3,
-	WR_SIZE_ERR = 4,
-	NO_CAPACITY_ERR = 5,
-	CANARY_1_ERR = 6,
-	CANARY_2_ERR = 7,
-	CANARY_3_ERR = 8,
-	CANARY_4_ERR = 9
+        CAPACITY_SIZE_ERR = 1 << 0,
+        NO_STACK_ERR = 1 << 1, 
+        WR_CAPACITY_ERR = 1 << 2,
+        WR_SIZE_ERR = 1 << 3,
+        NO_CAPACITY_ERR = 1 << 4,
+        CANARY_1_ERR = 1 << 5,
+        CANARY_2_ERR = 1 << 6,
+        CANARY_3_ERR = 1 << 7,
+        CANARY_4_ERR = 1 << 8
 };
 
 class Stack {
 private:
 	int canary_1;
-	int canary_2;
+	double canary_2;
 	std::vector<double> data_;
-	int canary_3;
-	size_t size_;
-	size_t capacity_;
-	size_t last_error_;
-	bool Ok();
-	void Dump();
+	double canary_3;
+	int size_;
+	int capacity_;
+	int errors_;
+	bool do_push;
+	double push_value;
+	char* var_name_;
+	void PrintError();
+	bool Ok() const;
 	bool Empty();
-	void Increase();
 	int canary_4;
 public:
 	void Push (double value);
@@ -49,11 +51,11 @@ public:
 	void Clear();
 	int Size();
 	int Capacity();
-	void PrintError();
-	Stack(size_t size);
-	Stack (const Stack& that);
+	void Dump() const;
+	Stack (int size, char* var_name);
+	Stack (const Stack& that, char* var_name);
 	~Stack();
-	size_t CheckErrors();
+	int CheckErrors();
 };
 
 #include "stack.cpp"  
