@@ -8,29 +8,29 @@ Stack::Stack (int size, char* var_name) :
 	errors_(0),
 	do_push(false),
 	push_value(0),
-	canary_4(CANARY_4),
-	var_name_(new char [255])
+	var_name_(new char [255]),
+	canary_4(CANARY_4)
 	{
 		var_name_ = var_name;
 		data_.resize(size);
 	}
 	
 
-Stack::Stack (const Stack& that, char* var_name) try:
+
+
+Stack::Stack (const Stack& that) try:
 	canary_1(CANARY_1),
         canary_2(CANARY_2),
         data_ (that.data_),
         canary_3(CANARY_3),
         size_ (that.size_),
         capacity_(that.size_),
-	errors_(0),
-	do_push(false),
-	push_value(0),
-        canary_4(CANARY_4),
-	var_name_(new char [255])
+	errors_(that.errors_),
+	do_push(that.do_push),
+	push_value(that.push_value),
+        canary_4(CANARY_4)
 	{}
 	catch (std::bad_alloc) {
-		var_name_ = var_name;
 		printf("Error data allocation\n");
 	}
 
@@ -96,9 +96,14 @@ bool Stack::Ok () const {
 
 void Stack::Dump () const {
 	if (!data_.empty()) {
+		if (var_name_ != NULL) {
+			printf("Var name: %s\n", var_name_); 
+		} else {
+			printf("No var name.\n");
+		}
 		if (size_) {
 			size_t i = size_;
-			printf("Var name: %s\n", var_name_);			printf("Capacity: %d \n", capacity_);
+			printf("Capacity: %d \n", capacity_);
 			printf("Size: %d \n", size_);
 			printf("Canary #1: %d \n", canary_1);
 			printf("Canary #2: %g \n", canary_2);
@@ -162,6 +167,7 @@ void Stack::PrintError() {
 			printf("Error code: size > capacity\n");
 			if (round(SIZE_INC*data_.size())>MAX_STACK_CAPACITY) {
 				printf("Message: the MAX_STACK_CAPACITY reached, stack will not be increased\n");
+				do_push = false;
 			} else {
 				data_.resize(round(data_.size()*SIZE_INC));
 				capacity_ = data_.size();  

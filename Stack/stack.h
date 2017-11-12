@@ -6,6 +6,8 @@
 #include <vector>
 #include <math.h>
 
+#define VAR_NAME(x) #x
+
 const int MAX_STACK_CAPACITY = 10000;
 const int MIN_STACK_CAPACITY = 2;
 const float SIZE_INC = 1.5;
@@ -53,9 +55,16 @@ public:
 	int Capacity();
 	void Dump() const;
 	Stack (int size, char* var_name);
-	Stack (const Stack& that, char* var_name);
+	Stack (const Stack& that);
 	~Stack();
 	int CheckErrors();
+	
+};
+
+class EqualStack {
+        Stack operator = (const Stack& s) {
+                return Stack(s);
+        }
 };
 
 #include "stack.cpp"  

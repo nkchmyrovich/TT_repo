@@ -3,11 +3,16 @@
 #define VAR_NAME(x) #x
 
 int main () {
-	Stack s(100, (char*)VAR_NAME(s));
+	Stack stack(10, (char*)VAR_NAME(stack));
 	for (size_t i = 0; i < 16; i++) {
-		s.Push(i);
+		stack.Push(i);
 	}
-	s.Push(123);
-	s.Dump();
+	Stack s1(10, (char*)VAR_NAME(s1));
+	
+	printf("============\n");
+	s1.Dump();
+	printf("============\n");
+	stack.Push(123);
+	stack.Dump();
 	return 0;
 }
